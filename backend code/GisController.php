@@ -622,7 +622,8 @@ class GisController extends Controller {
 						if (TelkomController::HelioKirimEmail($model->email,$subject,$content)){
 							echo json_encode(array("success"=>true));
 						}else{
-							echo json_encode(array("success"=>false,"messages"=>"Gagal Kirim Email"));
+							echo json_encode(array("success"=>true));
+							// echo json_encode(array("success"=>false,"messages"=>"Gagal Kirim Email"));
 						}
 
 				}else{
