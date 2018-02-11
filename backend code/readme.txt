@@ -1,0 +1,1 @@
+TelkomController merupakan class yang digunakan untuk mengeksekusi API Telkom

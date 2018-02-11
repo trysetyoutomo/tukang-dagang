@@ -154,7 +154,8 @@ class GisController extends Controller {
 							$model = new Iklan;
 							$model->ukm_id  = $ukm_id;
 							$model->tanggal_mulai = date("Y-m-d ");
-							$model->tanggal_akhir = date('Y-m-d',strtotime(date("Y-m-d ") . " + 7 day"));
+							$tgl_akhir = date('Y-m-d',strtotime(date("Y-m-d ") . " + 7 day"));
+							$model->tanggal_akhir = $tgl_akhir;
 							if ($model->save()){
 								$poin = new UserPoin;
 								$poin->username = $username;
@@ -163,7 +164,16 @@ class GisController extends Controller {
 								$poin->poin = -5000;
 								if ($poin->save()){
 									$transaction->commit();
-									echo json_encode(array("success"=>true));
+
+									$content = "Selamat!! Iklan anda akan aktif selama waktu 7 hari, sampai dengan $tgl_akhir
+										\n\nTim Tukang Dagang";
+										$subject = "Terimakasih telah memasang iklan ";
+										if (TelkomController::kirimSMS($username,$content)){
+											echo json_encode(array("success"=>true));
+										}else{
+											echo json_encode(array("success"=>true));
+										}
+
 								}else{
 									echo json_encode(array("success"=>false,"err"=>$poin->getErrors()));
 								}
@@ -603,10 +613,16 @@ class GisController extends Controller {
 					$model->isVerified = 1;
 					if ($model->update())
 						// if ($this->kirimSMS($phone)){
-						if ($this->HelioKirimEmail($model->email,"Haii ...  ","Selamat Anda telah bergabung dengan Tukang Dagang")){
+						$content = "Selamat Datang di Aplikasi Tukang Dagang , Aplikasi yang dapat memberikan informasi, memanggil & memesan Tukang Dagang sekitarmu
+
+						<br><br>
+						Best Regards
+						Tim Tukang Dagang";
+						$subject = "Terimakasih telah bergabung dengan Tukang Dagang";
+						if (TelkomController::HelioKirimEmail($model->email,$subject,$content)){
 							echo json_encode(array("success"=>true));
 						}else{
-							echo json_encode(array("success"=>false,"messages"=>"Gagal SMS"));
+							echo json_encode(array("success"=>false,"messages"=>"Gagal Kirim Email"));
 						}
 
 				}else{
@@ -676,91 +692,92 @@ class GisController extends Controller {
 		}
 
 
-		public function HelioKirimEmail($email,$subject,$content){
-			// exit;
-			$token = $this->verifikasiHelio();
+		// public function HelioKirimEmail($email,$subject,$content){
+		// 	// exit;
+		// 	$token = TelkomController::verifikasiHelio();
 
-			$curl = curl_init();
+		// 	$curl = curl_init();
 
-			curl_setopt_array($curl, array(
-			  CURLOPT_URL => "https://api.mainapi.net/helio/1.0.1/sendmail",
-			  CURLOPT_RETURNTRANSFER => true,
-			  CURLOPT_ENCODING => "",
-			  CURLOPT_MAXREDIRS => 10,
-			  CURLOPT_TIMEOUT => 30,
-			  CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-			  CURLOPT_CUSTOMREQUEST => "POST",
-			  CURLOPT_POSTFIELDS => "{\r\n  \"token\": \"$token\",\r\n  \"subject\": \"Hai\",\r\n  \"to\": \"$email\",\r\n  \"body\": \"$content\"\r\n}",
-			  CURLOPT_HTTPHEADER => array(
-			    "Authorization: Bearer bfdd35ca8e67275aa7d463f82454c076",
-			    "Cache-Control: no-cache",
-			    "Postman-Token: f4f57150-95e1-9870-a65a-861db654a2af"
-			  ),
-			));
+		// 	curl_setopt_array($curl, array(
+		// 	  CURLOPT_URL => "https://api.mainapi.net/helio/1.0.1/sendmail",
+		// 	  CURLOPT_RETURNTRANSFER => true,
+		// 	  CURLOPT_ENCODING => "",
+		// 	  CURLOPT_MAXREDIRS => 10,
+		// 	  CURLOPT_TIMEOUT => 30,
+		// 	  CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+		// 	  CURLOPT_CUSTOMREQUEST => "POST",
+		// 	  CURLOPT_POSTFIELDS => "{\r\n  \"token\": \"$token\",\r\n  \"subject\": \"Hai\",\r\n  \"to\": \"$email\",\r\n  \"body\": \"$content\"\r\n}",
+		// 	  CURLOPT_HTTPHEADER => array(
+		// 	    "Authorization: Bearer bfdd35ca8e67275aa7d463f82454c076",
+		// 	    "Cache-Control: no-cache",
+		// 	    "Postman-Token: f4f57150-95e1-9870-a65a-861db654a2af"
+		// 	  ),
+		// 	));
 
-			$response = curl_exec($curl);
-			$err = curl_error($curl);
+		// 	$response = curl_exec($curl);
+		// 	$err = curl_error($curl);
 
-			curl_close($curl);
+		// 	curl_close($curl);
 
-			if ($err) {
-			  echo "cURL Error #:" . $err;
-			} else {
-			  // echo $response;
-				$data = json_decode($response,TRUE);
-				if ($data['status']==200){
-					return true;
-				}else{
-					return false;
-				}
+
+		// 	if ($err) {
+		// 	  echo "cURL Error #:" . $err;
+		// 	} else {
+		// 	  // echo $response;
+		// 		$data = json_decode($response,TRUE);
+		// 		if ($data['status']==200){
+		// 			return true;
+		// 		}else{
+		// 			return false;
+		// 		}
 					
-					// return $data['result']['user']['token'];
-			}
+		// 			// return $data['result']['user']['token'];
+		// 	}
 					
 
 
-		}
+		// }
 
-		public function kirimSMS($username){
+		// public function kirimSMS($username){
 		
 
-			$curl = curl_init();
+		// 	$curl = curl_init();
 
-			curl_setopt_array($curl, array(
-			  CURLOPT_URL => "http://api.mainapi.net/smsnotification/1.0.0/messages",
-			  CURLOPT_RETURNTRANSFER => true,
-			  CURLOPT_ENCODING => "",
-			  CURLOPT_MAXREDIRS => 10,
-			  CURLOPT_TIMEOUT => 30,
-			  CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-			  CURLOPT_CUSTOMREQUEST => "POST",
-			  CURLOPT_POSTFIELDS => "------WebKitFormBoundary7MA4YWxkTrZu0gW\r\nContent-Disposition: form-data; name=\"msisdn\"\r\n\r\n$username\r\n------WebKitFormBoundary7MA4YWxkTrZu0gW\r\nContent-Disposition: form-data; name=\"content\"\r\n\r\n  Selamat Anda terdaftar pada  aplikasi Tukang Dagang :) \r\n------WebKitFormBoundary7MA4YWxkTrZu0gW--",
-			  CURLOPT_HTTPHEADER => array(
-			    "Authorization: Bearer bfdd35ca8e67275aa7d463f82454c076",
-			    "Cache-Control: no-cache",
-			    "Postman-Token: c0f32c0a-6f5a-9047-efe1-0ab50ad56eaf",
-			    "content-type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW"
-			  ),
-			));
+		// 	curl_setopt_array($curl, array(
+		// 	  CURLOPT_URL => "http://api.mainapi.net/smsnotification/1.0.0/messages",
+		// 	  CURLOPT_RETURNTRANSFER => true,
+		// 	  CURLOPT_ENCODING => "",
+		// 	  CURLOPT_MAXREDIRS => 10,
+		// 	  CURLOPT_TIMEOUT => 30,
+		// 	  CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+		// 	  CURLOPT_CUSTOMREQUEST => "POST",
+		// 	  CURLOPT_POSTFIELDS => "------WebKitFormBoundary7MA4YWxkTrZu0gW\r\nContent-Disposition: form-data; name=\"msisdn\"\r\n\r\n$username\r\n------WebKitFormBoundary7MA4YWxkTrZu0gW\r\nContent-Disposition: form-data; name=\"content\"\r\n\r\n  Selamat Anda terdaftar pada  aplikasi Tukang Dagang :) \r\n------WebKitFormBoundary7MA4YWxkTrZu0gW--",
+		// 	  CURLOPT_HTTPHEADER => array(
+		// 	    "Authorization: Bearer bfdd35ca8e67275aa7d463f82454c076",
+		// 	    "Cache-Control: no-cache",
+		// 	    "Postman-Token: c0f32c0a-6f5a-9047-efe1-0ab50ad56eaf",
+		// 	    "content-type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW"
+		// 	  ),
+		// 	));
 
-			$response = curl_exec($curl);
-			$err = curl_error($curl);
+		// 	$response = curl_exec($curl);
+		// 	$err = curl_error($curl);
 
-			curl_close($curl);
+		// 	curl_close($curl);
 
-			if ($err) {
-			  echo "cURL Error #:" . $err;
-			} else {
-				$data = json_decode($response, TRUE);
-				if ($data['status']=="SUCCESS"){
-					return true;
-				}else{
-					return false;
-				}
+		// 	if ($err) {
+		// 	  echo "cURL Error #:" . $err;
+		// 	} else {
+		// 		$data = json_decode($response, TRUE);
+		// 		if ($data['status']=="SUCCESS"){
+		// 			return true;
+		// 		}else{
+		// 			return false;
+		// 		}
 
-			  // echo $response;
-			}
-		}
+		// 	  // echo $response;
+		// 	}
+		// }
 		public function actionRegister() {
 			// if (isset(var))
 			$transaction = Yii::app()->db->beginTransaction();
@@ -790,50 +807,76 @@ class GisController extends Controller {
 
 							// tes
 
-							$curl = curl_init();
+							// $curl = curl_init();
+							ini_set('display_errors', 1);
 
-							curl_setopt_array($curl, array(
-							  CURLOPT_URL => "http://api.mainapi.net/smsotp/1.0.1/otp/$username",
-							  CURLOPT_RETURNTRANSFER => true,
-							  CURLOPT_ENCODING => "",
-							  CURLOPT_MAXREDIRS => 10,
-							  CURLOPT_TIMEOUT => 30,
-							  CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-							  CURLOPT_CUSTOMREQUEST => "PUT",
-							  CURLOPT_POSTFIELDS => "phoneNum=$username&digit=4",
-							  CURLOPT_HTTPHEADER => array(
-							    "Authorization: Bearer bfdd35ca8e67275aa7d463f82454c076",
-							    "Cache-Control: no-cache",
-							    "Content-Type: application/x-www-form-urlencoded",
-							    "Postman-Token: a24d0b85-5d02-8d26-841a-b6a6ffa73507",
-							    "accept: application/json"
-							  ),
-							));
+							ini_set('display_startup_errors', 1);
 
-							$response = curl_exec($curl);
-							$err = curl_error($curl);
+							error_reporting(E_ALL);
 
-							curl_close($curl);
+							$data = TelkomController::kirimSMSOtp($username);
+							if ($data['status']==true){
+								// return true;
+								// return $data['status'];
+								
+								$data = array(
+									"response"=>array("success"=>true),
+									"status"=>true,
+									// "number"=>$rand,	
+									"phone"=>$username
 
-							if ($err) {
-							  echo "cURL Error #:" . $err;
-							} else {
-								 $data = json_decode($response, TRUE);
-								if ($data['status']==true){
-									$data = array(
-										"response"=>array("success"=>true),
-										"status"=>true,
-										// "number"=>$rand,	
-										"phone"=>$username
-
-									);
-									$transaction->commit();
-									echo json_encode($data);
-								}else{
-									echo $response;
-									// echo "error";
-								}
+								);
+								$transaction->commit();
+								echo json_encode($data);
+							}else{
+								echo $response;
+								// echo "error";
 							}
+						
+
+
+							// curl_setopt_array($curl, array(
+							//   CURLOPT_URL => "http://api.mainapi.net/smsotp/1.0.1/otp/$username",
+							//   CURLOPT_RETURNTRANSFER => true,
+							//   CURLOPT_ENCODING => "",
+							//   CURLOPT_MAXREDIRS => 10,
+							//   CURLOPT_TIMEOUT => 30,
+							//   CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+							//   CURLOPT_CUSTOMREQUEST => "PUT",
+							//   CURLOPT_POSTFIELDS => "phoneNum=$username&digit=4",
+							//   CURLOPT_HTTPHEADER => array(
+							//     "Authorization: Bearer bfdd35ca8e67275aa7d463f82454c076",
+							//     "Cache-Control: no-cache",
+							//     "Content-Type: application/x-www-form-urlencoded",
+							//     "Postman-Token: a24d0b85-5d02-8d26-841a-b6a6ffa73507",
+							//     "accept: application/json"
+							//   ),
+							// ));
+
+							// $response = curl_exec($curl);
+							// $err = curl_error($curl);
+
+							// curl_close($curl);
+
+							// if ($err) {
+							//   echo "cURL Error #:" . $err;
+							// } else {
+							// 	 $data = json_decode($response, TRUE);
+							// 	if ($data['status']==true){
+							// 		$data = array(
+							// 			"response"=>array("success"=>true),
+							// 			"status"=>true,
+							// 			// "number"=>$rand,	
+							// 			"phone"=>$username
+
+							// 		);
+							// 		$transaction->commit();
+							// 		echo json_encode($data);
+							// 	}else{
+							// 		echo $response;
+							// 		// echo "error";
+							// 	}
+							// }
 							exit;
 							// tes
 
